@@ -73,12 +73,12 @@ unpacker1 cxt tyCon tyArgs con = case conArgs con of
     u <- getUnique
     funcName <- newName $ "UnpackedReaderTCon" ++ show u
     mName <- newName "m"
-    aName <- newName "z"
+    monadArgName <- newName "monadArg"
     fName <- newName "func"
     let decs = 
-	  [NewtypeInstD [] ''UnpackedReaderT [theTy, VarT mName, VarT aName]
+	  [NewtypeInstD [] ''UnpackedReaderT [theTy, VarT mName, VarT monadArgName]
 	    (NormalC funcName [(NotStrict, foldr (\ argTy result -> ArrowT `AppT` argTy `AppT` result)
-		  (VarT mName `AppT` VarT aName) conArgs)]) []] ++ pragmas ++ [
+		  (VarT mName `AppT` VarT monadArgName) conArgs)]) []] ++ pragmas ++ [
 	    FunD 'runUnpackedReaderT
 	      [Clause [ConP funcName [VarP fName], ConP conName (map VarP argNames)]
 		(NormalB (foldl AppE (VarE fName) (map VarE argNames))) []],
@@ -101,13 +101,13 @@ unpacker cxt tyCon tyArgs con = case conArgs con of
     u <- getUnique
     funcName <- newName $ "UnpackedReaderT" ++ show u
     mName <- newName "m"
-    aName <- newName "z"
+    monadArgName <- newName "monadArg"
     fName <- newName "func"
     let monadStack = foldr (\ argTy stk -> ConT ''UnpackedReaderT `AppT` argTy `AppT` stk)
 	  (VarT mName) conArgs
     let decs = 
-	  [NewtypeInstD [] ''UnpackedReaderT [theTy, VarT mName, VarT aName]
-	    (NormalC funcName [(NotStrict, monadStack `AppT` VarT aName)]) []] ++ pragmas ++ [
+	  [NewtypeInstD [] ''UnpackedReaderT [theTy, VarT mName, VarT monadArgName]
+	    (NormalC funcName [(NotStrict, monadStack `AppT` VarT monadArgName)]) []] ++ pragmas ++ [
 	    FunD 'runUnpackedReaderT
 	      [Clause [ConP funcName [VarP fName], ConP conName (map VarP argNames)]
 		(NormalB (foldl (\ func arg -> InfixE (Just func) (VarE 'runUnpackedReaderT)
@@ -134,11 +134,11 @@ noUnpacker cxt tyCon tyArgs = do
     u <- getUnique
     funcName <- newName $ "UnpackedReaderT" ++ show u
     mName <- newName "m"
-    aName <- newName "z"
+    monadArgName <- newName "monadArg"
     fName <- newName "func"
     let decs = 
-	  [NewtypeInstD [] ''UnpackedReaderT [theTy, VarT mName, VarT aName]
-	    (NormalC funcName [(NotStrict, ArrowT `AppT` theTy `AppT` (VarT mName `AppT` VarT aName))]) []] ++ pragmas ++ [
+	  [NewtypeInstD [] ''UnpackedReaderT [theTy, VarT mName, VarT monadArgName]
+	    (NormalC funcName [(NotStrict, ArrowT `AppT` theTy `AppT` (VarT mName `AppT` VarT monadArgName))]) []] ++ pragmas ++ [
 	    FunD 'runUnpackedReaderT
 	      [Clause [ConP funcName [VarP fName], VarP argName]
 		(NormalB (VarE fName `AppE` VarE argName)) []],
