@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell, QuasiQuotes, CPP #-}
 module Control.Monad.Unpack.TH (unpack1Instance, unpackInstance, noUnpackInstance, tupleInstance) where
 
 import Control.Monad
@@ -7,6 +7,12 @@ import Control.Monad.Unpack.Class
 import Language.Haskell.TH
 import System.IO.Unsafe
 import Data.IORef
+
+#if MIN_VERSION_template_haskell(2,8,0)
+#define INLINE Inline FunLike AllPhases
+#else
+#define INLINE $ InlineSpec True False Nothing
+#endif
 
 -- Apparently, newName still generates name conflicts in GHC 7.2?  Really, really weird.
 uglyUnique :: IORef Int
@@ -64,12 +70,11 @@ unpacker1 cxt tyCon tyArgs con = case conArgs con of
   (conName, conArgs) -> do
     argNames <- replicateM (length conArgs) (newName "arg")
     let theTy = foldl (\ t0 arg -> t0 `AppT` arg) (ConT tyCon) (map (VarT . tyVarBndrName) tyArgs)
-    let inline = InlineSpec True False Nothing
     let pragmas =
 	  [PragmaD $ InlineP (mkName "runUnpackedReaderT")
-	    inline,
+	    INLINE,
 	  PragmaD $ InlineP (mkName "unpackedReaderT")
-	    inline]
+	    INLINE]
     u <- getUnique
     funcName <- newName $ "UnpackedReaderTCon" ++ show u
     mName <- newName "m"
@@ -92,12 +97,11 @@ unpacker cxt tyCon tyArgs con = case conArgs con of
   (conName, conArgs) -> do
     argNames <- replicateM (length conArgs) (newName "arg")
     let theTy = foldl (\ t0 arg -> t0 `AppT` arg) (ConT tyCon) (map (VarT . tyVarBndrName) tyArgs)
-    let inline = InlineSpec True False Nothing
     let pragmas =
 	  [PragmaD $ InlineP (mkName "runUnpackedReaderT")
-	    inline,
+	    INLINE,
 	  PragmaD $ InlineP (mkName "unpackedReaderT")
-	    inline]
+	    INLINE]
     u <- getUnique
     funcName <- newName $ "UnpackedReaderT" ++ show u
     mName <- newName "m"
@@ -125,12 +129,11 @@ noUnpacker :: Cxt -> Name -> [TyVarBndr] -> Q [Dec]
 noUnpacker cxt tyCon tyArgs = do
     argName <- newName "arg"
     let theTy = foldl (\ t0 arg -> t0 `AppT` arg) (ConT tyCon) (map (VarT . tyVarBndrName) tyArgs)
-    let inline = InlineSpec True False Nothing
     let pragmas =
 	  [PragmaD $ InlineP (mkName "runUnpackedReaderT")
-	    inline,
+	    INLINE,
 	  PragmaD $ InlineP (mkName "unpackedReaderT")
-	    inline]
+	    INLINE]
     u <- getUnique
     funcName <- newName $ "UnpackedReaderT" ++ show u
     mName <- newName "m"
